@@ -140,7 +140,10 @@ namespace AsyncServer{
 				Heard(client);
 			}catch(SocketException ex) {
 				// If this happens, socket error code information is at: http://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
-				Logger.Warn("Could not accept socket (" + ex.ErrorCode.ToString() + "): " + ex.ToString());
+				Logger.Error("Could not accept socket (" + ex.ErrorCode.ToString() + "): " + ex.ToString());
+				if(client!=null){
+					DisconnectClient(client);
+				}
 			}catch(Exception ex) {
 				// Either the server is full or the client has reached the maximum connections per IP.
 				Logger.Error("Could not add client: " + ex.ToString());
@@ -217,22 +220,22 @@ namespace AsyncServer{
 				connected = connection.Client.Connected;
 				available = connection.Client.Available;
 			}
-            //	Logger.Debug("receive:"+read);
-            if (read != 0 && connected) {
-                connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
-                if (read == connection.Bytes.Length) {
-                    //还有内容
-                } else {
-                    if (available == 0) {
-                        Received(connection);
-                    }
-                }
-                if (timeout > 0) {
-                    connection.Timer.Restart();
-                }
-                if (Started) { 
-                    BeginRead(connection);
-                }
+			//	Logger.Debug("receive:"+read);
+			if (read != 0 && connected) {
+				connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
+				if (read == connection.Bytes.Length) {
+					//还有内容
+				} else {
+					if (available == 0) {
+						Received(connection);
+					}
+				}
+				if (timeout > 0) {
+					connection.Timer.Restart();
+				}
+				if (Started) {
+					BeginRead(connection);
+				}
 			}else{
 				DisconnectHandler(connection);
 			}
@@ -262,8 +265,8 @@ namespace AsyncServer{
 		/// <param name="connection">Disconnected connection.</param>
 		private void DisconnectHandler(Connection<T> connection) {
 			lock(m_clients) {
-			    if(connection!=null)
-				    m_clients.Remove(connection);
+				if(connection!=null)
+					m_clients.Remove(connection);
 			}
 			Disconnected(connection);
 			try{
