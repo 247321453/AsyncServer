@@ -31,6 +31,7 @@ namespace AsyncServer{
 		#endregion
 		
 		#region private member
+		protected readonly List<IPAddress> BanIpList = new List<IPAddress>();
 		/// <summary>
 		/// The listening socket.
 		/// </summary>
@@ -177,6 +178,14 @@ namespace AsyncServer{
 			lock(m_clients) {
 				m_clients.Add(connection);
 			}
+			if(connection.Address != IPAddress.None){
+				lock(BanIpList){
+					if(BanIpList.Contains(connection.Address)){
+						DisconnectClient(connection);
+						return;
+					}
+				}
+			}
 			if(timeout != 0) {
 				connection.Timer.Interval = timeout;
 				connection.Timer.Elapsed += OnTimeoutEventHandler;
@@ -251,6 +260,16 @@ namespace AsyncServer{
 					}else{
 						
 					}
+				}
+				if(connection.Statu == ConnectStatu.Fail){
+					lock(BanIpList){
+						if(!BanIpList.Contains(connection.Address)){
+							BanIpList.Add(connection.Address);
+							Logger.Warn("ban ip :"+connection.Address);
+						}
+					}
+					DisconnectClient(connection);
+					return;
 				}
 				if (timeout > 0) {
 					connection.Timer.Restart();
