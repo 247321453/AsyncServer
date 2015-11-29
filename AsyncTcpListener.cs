@@ -24,6 +24,10 @@ namespace AsyncServer{
 		/// Disconnect event handler.
 		/// </summary>
 		public delegate void DisconnectEventHandler(Connection<T> Client);
+		/// <summary>
+		/// Check Client frist
+		/// </summary>
+		public delegate ConnectStatu CheckEventHandler(Connection<T> Client);
 		#endregion
 		
 		#region private member
@@ -61,6 +65,10 @@ namespace AsyncServer{
 		/// Occurs when a client disconnects.
 		/// </summary>
 		public event DisconnectEventHandler OnDisconnect;
+		/// <summary>
+		/// check client first recevice
+		/// </summary>
+		public event CheckEventHandler OnCheckClient;
 		#endregion
 		
 		#region public member
@@ -193,6 +201,11 @@ namespace AsyncServer{
 		/// </summary>
 		/// <param name="connection">The connection to read from.</param>
 		private void BeginRead(Connection<T> connection) {
+			if(connection.Statu == ConnectStatu.Fail){
+				Logger.Warn("Illegal client ip :"+connection.Address);
+				DisconnectClient(connection);
+				return;
+			}
 			try {
 				byte[] cache = connection.ResetCache();
 				lock(connection.SyncRoot)
@@ -225,9 +238,14 @@ namespace AsyncServer{
 				connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
 				if (read == connection.Bytes.Length) {
 					//还有内容
+					if(connection.Statu == ConnectStatu.Uncheck && OnCheckClient != null){
+						connection.Statu = OnCheckClient(connection);
+					}
 				} else {
 					if (available == 0) {
 						Received(connection);
+					}else{
+						
 					}
 				}
 				if (timeout > 0) {

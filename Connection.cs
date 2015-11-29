@@ -28,6 +28,12 @@ namespace AsyncServer {
 	}
 	#endregion
 	
+	
+	public enum ConnectStatu{
+		Uncheck =0,
+		Success,
+		Fail
+	}
 	/// <summary>
 	/// Represents an Asterion client connection.
 	/// </summary>
@@ -39,9 +45,11 @@ namespace AsyncServer {
 		public Connection() {
 			timer = new TimeoutTimer(this);
 			m_ReceiveQueue = new ArrayQueue<byte>();
+			Statu = ConnectStatu.Uncheck;
 		}
 		
 		#region send
+		public ConnectStatu Statu{get; internal set;}
 		/// <summary>
 		/// 等待需要发出的数据
 		/// </summary>
