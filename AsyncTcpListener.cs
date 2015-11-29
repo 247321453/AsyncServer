@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Timers;
 using System.Net;
+using System.IO;
 
 namespace AsyncServer{
 	
@@ -104,6 +105,7 @@ namespace AsyncServer{
 		public double Timeout {
 			get { return timeout; }
 		}
+		protected bool m_banmode;
 		#endregion
 		
 		#region Initializes
@@ -113,7 +115,9 @@ namespace AsyncServer{
 		/// <param name="host">Host to listen on.</param>
 		/// <param name="port">Port to listen on.</param>
 		/// <param name="timeout">Client timeout time.</param>
-		public AsyncTcpListener(IPAddress host, int port, int timeout = 0) {
+		/// <param name="banmode">ban IPAddress</param>
+		public AsyncTcpListener(IPAddress host, int port, int timeout = 0,bool banmode = false) {
+			this.m_banmode = banmode;
 			Init(host, port, timeout);
 		}
 		
@@ -178,14 +182,10 @@ namespace AsyncServer{
 			lock(m_clients) {
 				m_clients.Add(connection);
 			}
-			if(connection.Address != IPAddress.None){
-				lock(BanIpList){
-					if(BanIpList.Contains(connection.Address)){
-						DisconnectClient(connection);
-						Logger.Warn("ban ip :"+connection.Address+"  connect");
-						return;
-					}
-				}
+			if(IsBan(connection.Address)){
+				DisconnectClient(connection);
+				Logger.Warn("ban ip :"+connection.Address+"  connect");
+				return;
 			}
 			if(timeout != 0) {
 				connection.Timer.Interval = timeout;
@@ -263,11 +263,8 @@ namespace AsyncServer{
 					}
 				}
 				if(connection.Statu == ConnectStatu.Fail){
-					lock(BanIpList){
-						if(!BanIpList.Contains(connection.Address)){
-							BanIpList.Add(connection.Address);
-							Logger.Warn("ban ip :"+connection.Address);
-						}
+					if(BanAddress(connection.Address)){
+						Logger.Warn("ban ip :"+connection.Address);
 					}
 					DisconnectClient(connection);
 					return;
@@ -321,6 +318,56 @@ namespace AsyncServer{
 				//Logger.Error("Close error:"+e.ToString());
 			}
 		}
+		private bool IsBan(IPAddress addr){
+			if(!m_banmode) return false;
+			if(addr==null||addr==IPAddress.None){
+				return false;
+			}
+			lock(BanIpList){
+				return BanIpList.Contains(addr);
+			}
+		}
+		private void ReadBanAddress(){
+			if(!m_banmode) return;
+			string file  = "banip_"+port+".txt";
+			if(File.Exists(file)){
+				string[] lines  = File.ReadAllLines(file);
+				foreach(string line in lines){
+					if(line!=null&&!line.StartsWith("#")){
+						IPAddress addr = null;
+						try{
+							addr = IPAddress.Parse(line.Trim());
+						}catch(Exception){
+							
+						}
+						if(addr!=null){
+							lock(BanIpList){
+								if(!BanIpList.Contains(addr)){
+									BanIpList.Add(addr);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		private bool BanAddress(IPAddress addr){
+			bool statu = false;
+			if(!m_banmode) return statu;
+			lock(BanIpList){
+				if(!BanIpList.Contains(addr)){
+					BanIpList.Add(addr);
+					statu = true;
+				}
+			}
+			if(statu){
+				try{
+					File.WriteAllText("banip_"+port+".txt", addr + Environment.NewLine);
+				}catch(Exception){
+				}
+			}
+			return statu;
+		}
 		#endregion
 
 		#region start/close
@@ -330,6 +377,9 @@ namespace AsyncServer{
 		public void Start() {
 			if(!Started) {
 				Started = true;
+				if(m_banmode){
+					ReadBanAddress();
+				}
 				Listen();
 			}
 		}
