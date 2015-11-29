@@ -182,6 +182,7 @@ namespace AsyncServer{
 				lock(BanIpList){
 					if(BanIpList.Contains(connection.Address)){
 						DisconnectClient(connection);
+						Logger.Warn("ban ip :"+connection.Address+"  connect");
 						return;
 					}
 				}
