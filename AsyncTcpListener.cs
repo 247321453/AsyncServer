@@ -243,6 +243,10 @@ namespace AsyncServer{
 					}
 				} else {
 					if (available == 0) {
+						//first packet
+						if(connection.Statu == ConnectStatu.Uncheck && OnCheckClient != null){
+							connection.Statu = OnCheckClient(connection);
+						}
 						Received(connection);
 					}else{
 						
