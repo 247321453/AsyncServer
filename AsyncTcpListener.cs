@@ -245,7 +245,8 @@ namespace AsyncServer{
 			}
 			//	Logger.Debug("receive:"+read);
 			if (read != 0 && connected) {
-				connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
+                lock(connection.SyncRoot)
+                    connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
 				if (read == connection.Bytes.Length) {
 					//还有内容
 					if(connection.Statu == ConnectStatu.Uncheck && OnCheckClient != null){

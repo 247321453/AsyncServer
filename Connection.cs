@@ -305,6 +305,43 @@ namespace AsyncServer {
 		#endregion
 		
 		#region public method
+        public bool GetPacketData(int GamePacketByteLength, out byte[] data)
+        {
+            lock (SyncRoot)
+            {
+                if(GamePacketByteLength != 2)
+                {
+                    GamePacketByteLength = 4;
+                }
+                if (ReceiveQueue.Count > GamePacketByteLength)
+                {
+                    byte[] blen = new byte[GamePacketByteLength];
+                    ReceiveQueue.Dequeue(blen);
+                    uint len = (GamePacketByteLength==2) ? BitConverter.ToUInt16(blen, 0): BitConverter.ToUInt32(blen, 0);
+                    if (len == 0)
+                    {
+                        data = new byte[0];
+                        return true;
+                    }
+                    int lastcount = ReceiveQueue.Count;
+                    if (lastcount >= len)
+                    {
+                        data = new byte[len];
+                        ReceiveQueue.Dequeue(data);
+                        return true;
+                        //Logger.Debug("add packet");
+                    }
+                    else {
+                        byte[] tmpdata = new byte[lastcount];
+                        ReceiveQueue.Dequeue(tmpdata);
+                        ReceiveQueue.Enqueue(blen);
+                        ReceiveQueue.Enqueue(tmpdata);
+                    }
+                }
+            }
+            data = new byte[0];
+            return false;
+        }
 		/// <summary>
 		/// close
 		/// </summary>
