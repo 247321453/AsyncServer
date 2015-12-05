@@ -28,6 +28,10 @@ namespace AsyncServer
 		public void Enqueue(T[] data, int start, int count)
 		{
 			if(data == null) return;
+            if (count < 0)
+            {
+                count = data.Length;
+            }
 			lock(_lock){
 				for(;start<data.Length && count>0;count--){
 					this.Enqueue(data[start++]);
@@ -56,5 +60,5 @@ namespace AsyncServer
 				}
 			}
 		}
-	}
+    }
 }

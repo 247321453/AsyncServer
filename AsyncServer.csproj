@@ -41,14 +41,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AClient.cs" />
     <Compile Include="ArrayQueue.cs" />
     <Compile Include="AsyncClient.cs" />
     <Compile Include="AsyncTcpListener.cs" />
     <Compile Include="BinaryExtensions.cs" />
-    <Compile Include="Connection.cs" />
+    <Compile Include="Connection.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="EventHandler.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="MyTimer.cs" />
+    <Compile Include="MyTimer.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="PacketReader.cs" />
     <Compile Include="PacketWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

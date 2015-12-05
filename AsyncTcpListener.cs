@@ -176,9 +176,7 @@ namespace AsyncServer{
 		/// </summary>
 		/// <param name="client">The new client.</param>
 		private void Heard(TcpClient client) {
-			Connection<T> connection = new Connection<T>() {
-				Client = client,
-			};
+			Connection<T> connection = new Connection<T>(client);
 			lock(m_clients) {
 				m_clients.Add(connection);
 			}
@@ -245,8 +243,7 @@ namespace AsyncServer{
 			}
 			//	Logger.Debug("receive:"+read);
 			if (read != 0 && connected) {
-                lock(connection.SyncRoot)
-                    connection.ReceiveQueue.Enqueue(connection.Bytes, 0, read);
+                connection.PushPacketData(connection.Bytes, 0, read);
 				if (read == connection.Bytes.Length) {
 					//还有内容
 					if(connection.Statu == ConnectStatu.Uncheck && OnCheckClient != null){
